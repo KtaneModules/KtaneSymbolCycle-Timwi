@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using SymbolCycle;
 using UnityEngine;
@@ -71,6 +72,9 @@ public class SymbolCycleModule : MonoBehaviour
 
     private KMSelectable.OnInteractHandler getScreenClickHandler(int i)
     {
+        ScreenSelectables[i].AddInteractionPunch();
+        Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, ScreenSelectables[i].transform);
+
         return delegate
         {
             switch (_state)
@@ -96,10 +100,13 @@ public class SymbolCycleModule : MonoBehaviour
 
     private bool toggleSwitch()
     {
+        SwitchSelectable.AddInteractionPunch();
+        Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, SwitchSelectable.transform);
+
         switch (_state)
         {
             case State.Cycling:
-                StartCoroutine(toggleSwitch(20));
+                StartCoroutine(toggleSwitch(0, 20));
                 _state = Rnd.Range(0, 2) == 0 ? State.Retrotransphasic : State.Anterodiametric;
                 _cycleNumber = Rnd.Range(1000000, 100000000);
                 NumberDisplay.text = _cycleNumber.ToString();
@@ -119,14 +126,15 @@ public class SymbolCycleModule : MonoBehaviour
                 _selectedSymbolIxs = new int[4];
                 for (int i = 0; i < 4; i++)
                 {
-                    _selectedSymbolIxs[i] = Rnd.Range(0, _selectableSymbols[i].Length);
+                    // Make sure that we do not show a decoy symbol at first in case it’s the anterodiametric state
+                    _selectedSymbolIxs[i] = Array.IndexOf(_selectableSymbols[i], _cycles[i][Rnd.Range(0, _cycles[i].Length)]);
                     ScreenSymbols[i].material.mainTexture = Symbols[_selectableSymbols[i][_selectedSymbolIxs[i]]];
                 }
                 break;
 
             case State.Retrotransphasic:
             case State.Anterodiametric:
-                StartCoroutine(toggleSwitch(0));
+                StartCoroutine(toggleSwitch(20, 0));
                 var correct = true;
                 for (int i = 0; i < 4; i++)
                 {
@@ -152,23 +160,27 @@ public class SymbolCycleModule : MonoBehaviour
         return false;
     }
 
-    private float _curSwitchRotation = 0;
-    private IEnumerator toggleSwitch(float to)
+    private bool _togglingSwitch = false;
+    private IEnumerator toggleSwitch(float from, float to)
     {
-        var from = _curSwitchRotation;
+        while (_togglingSwitch)
+            yield return null;
+        _togglingSwitch = true;
+
+        var cur = from;
         var stop = false;
         while (!stop)
         {
-            _curSwitchRotation += 150 * Time.deltaTime * (to > from ? 1 : -1);
-            _curSwitchRotation %= 360;
-            if ((to > from && _curSwitchRotation >= to) || (to < from && _curSwitchRotation <= to))
+            cur += 150 * Time.deltaTime * (to > from ? 1 : -1);
+            if ((to > from && cur >= to) || (to < from && cur <= to))
             {
-                _curSwitchRotation = to;
+                cur = to;
                 stop = true;
             }
-            Switch.localEulerAngles = new Vector3(_curSwitchRotation, 0, 0);
+            Switch.localEulerAngles = new Vector3(cur, 0, 0);
             yield return null;
         }
+        _togglingSwitch = false;
     }
 
     private IEnumerator CycleSymbols()
