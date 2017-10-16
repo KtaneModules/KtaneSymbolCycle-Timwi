@@ -1,22 +1,17 @@
 fileFormatVersion: 2
-guid: e0dfefcab98142546a1291491c54d3de
-timeCreated: 1507114111
+guid: be733f3102e9f9b4b9d3d155f4323392
+timeCreated: 1507940493
 licenseType: Free
 ModelImporter:
   serializedVersion: 19
   fileIDToRecycleName:
-    100000: default
+    100000: SwitchCasing
     100002: //RootNode
-    100004: Switch
-    400000: default
+    400000: SwitchCasing
     400002: //RootNode
-    400004: Switch
-    2300000: default
-    2300002: Switch
-    3300000: default
-    3300002: Switch
-    4300000: default
-    4300002: Switch
+    2300000: SwitchCasing
+    3300000: SwitchCasing
+    4300000: SwitchCasing
   materials:
     importMaterials: 1
     materialName: 0

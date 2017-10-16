@@ -30,7 +30,8 @@ public class SymbolCycleModule : MonoBehaviour
     {
         Cycling,
         Retrotransphasic,
-        Anterodiametric
+        Anterodiametric,
+        Solved
     }
 
     private int[][] _cycles;
@@ -92,6 +93,9 @@ public class SymbolCycleModule : MonoBehaviour
                     _cycleNumber += _offsets[i];
                     NumberDisplay.text = _cycleNumber.ToString();
                     break;
+
+                case State.Solved:
+                    break;
             }
 
             return false;
@@ -106,7 +110,7 @@ public class SymbolCycleModule : MonoBehaviour
         switch (_state)
         {
             case State.Cycling:
-                StartCoroutine(toggleSwitch(0, 20));
+                StartCoroutine(toggleSwitch(0, 30));
                 _state = Rnd.Range(0, 2) == 0 ? State.Retrotransphasic : State.Anterodiametric;
                 _cycleNumber = Rnd.Range(1000000, 100000000);
                 NumberDisplay.text = _cycleNumber.ToString();
@@ -122,19 +126,28 @@ public class SymbolCycleModule : MonoBehaviour
                 }
 
                 Debug.LogFormat("[Symbol Cycle #{0}] Switching to {1} state.", _moduleId, _state);
+                Debug.LogFormat("[Symbol Cycle #{0}] Displayed cycle number is: {1}", _moduleId, _cycleNumber);
 
                 _selectedSymbolIxs = new int[4];
+                var anterodiametricCycleNumber = _cycleNumber + Rnd.Range(0, 60);
                 for (int i = 0; i < 4; i++)
                 {
-                    // Make sure that we do not show a decoy symbol at first in case it’s the anterodiametric state
-                    _selectedSymbolIxs[i] = Array.IndexOf(_selectableSymbols[i], _cycles[i][Rnd.Range(0, _cycles[i].Length)]);
+                    // Make sure that we show a valid symbol combination in case it’s the anterodiametric state
+                    _selectedSymbolIxs[i] = Array.IndexOf(_selectableSymbols[i], _cycles[i][anterodiametricCycleNumber % _cycles[i].Length]);
                     ScreenSymbols[i].material.mainTexture = Symbols[_selectableSymbols[i][_selectedSymbolIxs[i]]];
+                }
+                if (_state == State.Retrotransphasic)
+                    Debug.LogFormat("[Symbol Cycle #{0}] Solution: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _cycles[i][_cycleNumber % _cycles[i].Length]).JoinString(", "));
+                else
+                {
+                    Debug.LogFormat("[Symbol Cycle #{0}] Displayed symbols: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
+                    Debug.LogFormat("[Symbol Cycle #{0}] Possible solution: {1}", _moduleId, anterodiametricCycleNumber);
                 }
                 break;
 
             case State.Retrotransphasic:
             case State.Anterodiametric:
-                StartCoroutine(toggleSwitch(20, 0));
+                StartCoroutine(toggleSwitch(30, 0));
                 var correct = true;
                 for (int i = 0; i < 4; i++)
                 {
@@ -147,6 +160,9 @@ public class SymbolCycleModule : MonoBehaviour
                 {
                     Debug.LogFormat("[Symbol Cycle #{0}] Module solved.", _moduleId);
                     Module.HandlePass();
+                    for (int i = 0; i < 4; i++)
+                        ScreenSymbols[i].gameObject.SetActive(false);
+                    _state = State.Solved;
                 }
                 else
                 {
@@ -154,6 +170,9 @@ public class SymbolCycleModule : MonoBehaviour
                     Module.HandleStrike();
                     ResetModule();
                 }
+                break;
+
+            case State.Solved:
                 break;
         }
 
@@ -171,13 +190,13 @@ public class SymbolCycleModule : MonoBehaviour
         var stop = false;
         while (!stop)
         {
-            cur += 150 * Time.deltaTime * (to > from ? 1 : -1);
+            cur += 250 * Time.deltaTime * (to > from ? 1 : -1);
             if ((to > from && cur >= to) || (to < from && cur <= to))
             {
                 cur = to;
                 stop = true;
             }
-            Switch.localEulerAngles = new Vector3(cur, 0, 0);
+            Switch.localEulerAngles = new Vector3(0, 90, 180 + cur);
             yield return null;
         }
         _togglingSwitch = false;
