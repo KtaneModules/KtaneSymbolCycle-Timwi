@@ -44,6 +44,7 @@ public class SymbolCycleModule : MonoBehaviour
     void Start()
     {
         _moduleId = _moduleIdCounter++;
+        Array.Sort(Symbols, (a, b) => int.Parse(a.name.Substring(4)).CompareTo(int.Parse(b.name.Substring(4))));
         SwitchSelectable.OnInteract = toggleSwitch;
         for (int i = 0; i < 4; i++)
             ScreenSelectables[i].OnInteract = getScreenClickHandler(i);
@@ -150,11 +151,8 @@ public class SymbolCycleModule : MonoBehaviour
                 StartCoroutine(toggleSwitch(30, 0));
                 var correct = true;
                 for (int i = 0; i < 4; i++)
-                {
-                    Debug.LogFormat("[Symbol Cycle #{0}] {1} symbol is {2}; expected symbol is {3}.", _moduleId, new[] { "Top left", "Top right", "Bottom left", "Bottom right" }[i], _selectableSymbols[i][_selectedSymbolIxs[i]], _cycles[i][_cycleNumber % _cycles[i].Length]);
                     if (_selectableSymbols[i][_selectedSymbolIxs[i]] != _cycles[i][_cycleNumber % _cycles[i].Length])
                         correct = false;
-                }
 
                 if (correct)
                 {
@@ -166,7 +164,10 @@ public class SymbolCycleModule : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered.", _moduleId);
+                    if (_state == State.Anterodiametric)
+                        Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered: {1}", _moduleId, _cycleNumber);
+                    else
+                        Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
                     Module.HandleStrike();
                     ResetModule();
                 }
