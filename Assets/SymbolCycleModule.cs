@@ -46,7 +46,7 @@ public class SymbolCycleModule : MonoBehaviour
         _moduleId = _moduleIdCounter++;
         Array.Sort(Symbols, (a, b) => int.Parse(a.name.Substring(4)).CompareTo(int.Parse(b.name.Substring(4))));
         SwitchSelectable.OnInteract = toggleSwitch;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 2; i++)
             ScreenSelectables[i].OnInteract = getScreenClickHandler(i);
 
         ResetModule();
@@ -55,21 +55,21 @@ public class SymbolCycleModule : MonoBehaviour
     private void ResetModule()
     {
         var allSymbols = Enumerable.Range(0, Symbols.Length).ToList().Shuffle();
-        _cycles = new int[4][];
-        _cycles[0] = allSymbols.Take(2).ToArray();
-        _cycles[1] = allSymbols.Skip(2).Take(3).ToArray();
-        _cycles[2] = allSymbols.Skip(5).Take(4).ToArray();
-        _cycles[3] = allSymbols.Skip(9).Take(5).ToArray();
-        _cycles.Shuffle();
+        var cycleLength1 = new[] { 2, 3, 4, 5 }[Rnd.Range(0, 4)];
+        var cycleLengths2 = (cycleLength1 == 2 || cycleLength1 == 4 ? new[] { 3, 5 } : new[] { 2, 3, 4, 5 }.Except(new[] { cycleLength1 })).ToArray();
+        var cycleLength2 = cycleLengths2[Rnd.Range(0, cycleLengths2.Length)];
+
+        _cycles = new[] {
+            allSymbols.Take(cycleLength1).ToArray(),
+            allSymbols.Skip(cycleLength1).Take(cycleLength2).ToArray()
+        };
 
         _state = State.Cycling;
         _cycleNumber = Rnd.Range(10, 100);
         StartCoroutine(CycleSymbols());
 
-        Debug.LogFormat("[Symbol Cycle #{0}] Top left cycle: [{1}]", _moduleId, _cycles[0].JoinString(", "));
-        Debug.LogFormat("[Symbol Cycle #{0}] Top right cycle: [{1}]", _moduleId, _cycles[1].JoinString(", "));
-        Debug.LogFormat("[Symbol Cycle #{0}] Bottom left cycle: [{1}]", _moduleId, _cycles[2].JoinString(", "));
-        Debug.LogFormat("[Symbol Cycle #{0}] Bottom right cycle: [{1}]", _moduleId, _cycles[3].JoinString(", "));
+        Debug.LogFormat("[Symbol Cycle #{0}] Left cycle: [{1}]", _moduleId, _cycles[0].JoinString(", "));
+        Debug.LogFormat("[Symbol Cycle #{0}] Right cycle: [{1}]", _moduleId, _cycles[1].JoinString(", "));
     }
 
     private KMSelectable.OnInteractHandler getScreenClickHandler(int i)
@@ -116,10 +116,10 @@ public class SymbolCycleModule : MonoBehaviour
                 _cycleNumber = Rnd.Range(1000000, 100000000);
                 NumberDisplay.text = _cycleNumber.ToString();
 
-                _offsets = new[] { -1, 1, -10, 10 }.Shuffle();
-                _selectableSymbols = new int[4][];
+                _offsets = new[] { -1, 1 }.Shuffle();
+                _selectableSymbols = new int[2][];
                 var decoys = Enumerable.Range(0, Symbols.Length).Except(_cycles.SelectMany(x => x)).ToList().Shuffle();
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 2; i++)
                 {
                     var numDecoys = Rnd.Range(1, 4);
                     _selectableSymbols[i] = _cycles[i].Concat(decoys.Take(numDecoys)).ToArray().Shuffle();
@@ -129,19 +129,19 @@ public class SymbolCycleModule : MonoBehaviour
                 Debug.LogFormat("[Symbol Cycle #{0}] Switching to {1} state.", _moduleId, _state);
                 Debug.LogFormat("[Symbol Cycle #{0}] Displayed cycle number is: {1}", _moduleId, _cycleNumber);
 
-                _selectedSymbolIxs = new int[4];
+                _selectedSymbolIxs = new int[2];
                 var anterodiametricCycleNumber = _cycleNumber + Rnd.Range(0, 60);
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 2; i++)
                 {
                     // Make sure that we show a valid symbol combination in case it’s the anterodiametric state
                     _selectedSymbolIxs[i] = Array.IndexOf(_selectableSymbols[i], _cycles[i][anterodiametricCycleNumber % _cycles[i].Length]);
                     ScreenSymbols[i].material.mainTexture = Symbols[_selectableSymbols[i][_selectedSymbolIxs[i]]];
                 }
                 if (_state == State.Retrotransphasic)
-                    Debug.LogFormat("[Symbol Cycle #{0}] Solution: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _cycles[i][_cycleNumber % _cycles[i].Length]).JoinString(", "));
+                    Debug.LogFormat("[Symbol Cycle #{0}] Solution: {1}", _moduleId, Enumerable.Range(0, 2).Select(i => _cycles[i][_cycleNumber % _cycles[i].Length]).JoinString(", "));
                 else
                 {
-                    Debug.LogFormat("[Symbol Cycle #{0}] Displayed symbols: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
+                    Debug.LogFormat("[Symbol Cycle #{0}] Displayed symbols: {1}", _moduleId, Enumerable.Range(0, 2).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
                     Debug.LogFormat("[Symbol Cycle #{0}] Possible solution: {1}", _moduleId, anterodiametricCycleNumber);
                 }
                 break;
@@ -150,7 +150,7 @@ public class SymbolCycleModule : MonoBehaviour
             case State.Anterodiametric:
                 StartCoroutine(toggleSwitch(30, 0));
                 var correct = true;
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 2; i++)
                     if (_selectableSymbols[i][_selectedSymbolIxs[i]] != _cycles[i][_cycleNumber % _cycles[i].Length])
                         correct = false;
 
@@ -158,7 +158,7 @@ public class SymbolCycleModule : MonoBehaviour
                 {
                     Debug.LogFormat("[Symbol Cycle #{0}] Module solved.", _moduleId);
                     Module.HandlePass();
-                    for (int i = 0; i < 4; i++)
+                    for (int i = 0; i < 2; i++)
                         ScreenSymbols[i].gameObject.SetActive(false);
                     _state = State.Solved;
                 }
@@ -167,7 +167,7 @@ public class SymbolCycleModule : MonoBehaviour
                     if (_state == State.Anterodiametric)
                         Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered: {1}", _moduleId, _cycleNumber);
                     else
-                        Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered: {1}", _moduleId, Enumerable.Range(0, 4).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
+                        Debug.LogFormat("[Symbol Cycle #{0}] Wrong solution entered: {1}", _moduleId, Enumerable.Range(0, 2).Select(i => _selectableSymbols[i][_selectedSymbolIxs[i]]).JoinString(", "));
                     Module.HandleStrike();
                     ResetModule();
                 }
@@ -209,7 +209,7 @@ public class SymbolCycleModule : MonoBehaviour
         {
             _cycleNumber++;
             NumberDisplay.text = _cycleNumber.ToString();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 2; i++)
                 ScreenSymbols[i].material.mainTexture = Symbols[_cycles[i][_cycleNumber % _cycles[i].Length]];
             var time = Time.time;
             yield return new WaitUntil(() => Time.time - time >= 1.47f || _state != State.Cycling);
