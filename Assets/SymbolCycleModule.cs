@@ -215,4 +215,84 @@ public class SymbolCycleModule : MonoBehaviour
             yield return new WaitUntil(() => Time.time - time >= 1.47f || _state != State.Cycling);
         }
     }
+
+	private bool EqualsAny(object obj, params object[] targets)
+	{
+		return targets.Contains(obj);
+	}
+
+	public string TwitchHelpText = "Flip the switch by doing !{0} flip. The module will cycle through the screens automatically, but you can do it again using !{0} cycle. Click a screen a certain number of times by doing !{0} click 1 3, which will click the left screen 3 times.";
+	public IEnumerator ProcessTwitchCommand(string command)
+	{
+		string[] split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+		
+		if (EqualsAny(split[0], "click", "press") && split.Length == 3 && _state != State.Cycling)
+		{
+			yield return null;
+			yield return "trycancel"; // Doesn't really matter where this command is cancelled.
+
+			int screen;
+			int clicks;
+			
+			if (int.TryParse(split[1], out screen) && int.TryParse(split[2], out clicks))
+			{
+				KMSelectable screenSelectable = ScreenSelectables[--screen];
+				if (!screenSelectable) yield break;
+
+				float clickSpeed = Math.Min(1.5f / clicks, 0.1f);
+				
+				for (int i = 0; i < clicks; i++)
+				{
+					screenSelectable.OnInteract();
+
+					if (clickSpeed > 0.001f)
+					{
+						yield return new WaitForSeconds(clickSpeed);
+					}
+				}
+			}
+		}
+		else if (EqualsAny(split[0], "flip", "switch") && split.Length == 1)
+		{
+			yield return null;
+
+			bool wasCycling = _state == State.Cycling;
+
+			SwitchSelectable.OnInteract();
+			yield return new WaitForSeconds(0.1f);
+
+			if (wasCycling)
+			{
+				IEnumerator enumator = ProcessTwitchCommand("cycle");
+				while (enumator.MoveNext()) yield return enumator.Current;
+			}
+		}
+		else if (split[0] == "cycle" && split.Length == 1 && _state != State.Cycling)
+		{
+			yield return null;
+
+			switch (_state)
+			{
+				case State.Retrotransphasic:
+					for (int s = 0; s < ScreenSelectables.Length; s++)
+					{
+						for (int i = 0; i < _selectableSymbols[s].Length; i++)
+						{
+							yield return new WaitForSeconds(1f);
+							ScreenSelectables[s].OnInteract();
+						}
+					}
+
+					break;
+				case State.Anterodiametric:
+					for (int s = 0; s < ScreenSelectables.Length; s++)
+					{
+						yield return new WaitForSeconds(1f);
+						ScreenSelectables[s].OnInteract();
+					}
+
+					break;
+			}
+		}
+	}
 }
