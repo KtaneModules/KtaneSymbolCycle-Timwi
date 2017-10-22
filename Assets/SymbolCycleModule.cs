@@ -216,83 +216,85 @@ public class SymbolCycleModule : MonoBehaviour
         }
     }
 
-	private bool EqualsAny(object obj, params object[] targets)
-	{
-		return targets.Contains(obj);
-	}
+    private bool EqualsAny(object obj, params object[] targets)
+    {
+        return targets.Contains(obj);
+    }
 
-	public string TwitchHelpText = "Flip the switch by doing !{0} flip. The module will cycle through the screens automatically, but you can do it again using !{0} cycle. Click a screen a certain number of times by doing !{0} click 1 3, which will click the left screen 3 times.";
-	public IEnumerator ProcessTwitchCommand(string command)
-	{
-		string[] split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-		
-		if (EqualsAny(split[0], "click", "press") && split.Length == 3 && _state != State.Cycling)
-		{
-			yield return null;
-			yield return "trycancel"; // Doesn't really matter where this command is cancelled.
+    public string TwitchHelpText = "Flip the switch by doing !{0} flip. The module will cycle through the screens automatically, but you can do it again using !{0} cycle. Click a screen a certain number of times by doing !{0} click left 3, which will click the left screen 3 times.";
+    public IEnumerator ProcessTwitchCommand(string command)
+    {
+        string[] split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-			int screen;
-			int clicks;
-			
-			if (int.TryParse(split[1], out screen) && int.TryParse(split[2], out clicks))
-			{
-				KMSelectable screenSelectable = ScreenSelectables[--screen];
-				if (!screenSelectable) yield break;
+        if (split.Length == 3 && EqualsAny(split[0], "click", "press") && EqualsAny(split[1], "left", "right") && _state != State.Cycling)
+        {
+            yield return null;
 
-				float clickSpeed = Math.Min(1.5f / clicks, 0.1f);
-				
-				for (int i = 0; i < clicks; i++)
-				{
-					screenSelectable.OnInteract();
+            int clicks;
+            if (int.TryParse(split[2], out clicks) && clicks >= 1)
+            {
+                KMSelectable screenSelectable = ScreenSelectables[split[1] == "left" ? 0 : 1];
+                if (!screenSelectable)
+                    yield break;
 
-					if (clickSpeed > 0.001f)
-					{
-						yield return new WaitForSeconds(clickSpeed);
-					}
-				}
-			}
-		}
-		else if (EqualsAny(split[0], "flip", "switch") && split.Length == 1)
-		{
-			yield return null;
+                float clickSpeed = Math.Min(1.5f / clicks, 0.1f);
 
-			bool wasCycling = _state == State.Cycling;
+                for (int i = 0; i < clicks; i++)
+                {
+                    screenSelectable.OnInteract();
 
-			SwitchSelectable.OnInteract();
-			yield return new WaitForSeconds(0.1f);
+                    if (clickSpeed > 0.001f)
+                    {
+                        yield return new WaitForSeconds(clickSpeed);
+                        yield return "trycancel";
+                    }
+                }
+            }
+        }
+        else if (split.Length == 1 && EqualsAny(split[0], "flip", "switch"))
+        {
+            yield return null;
 
-			if (wasCycling)
-			{
-				IEnumerator enumator = ProcessTwitchCommand("cycle");
-				while (enumator.MoveNext()) yield return enumator.Current;
-			}
-		}
-		else if (split[0] == "cycle" && split.Length == 1 && _state != State.Cycling)
-		{
-			yield return null;
+            bool wasCycling = _state == State.Cycling;
 
-			switch (_state)
-			{
-				case State.Retrotransphasic:
-					for (int s = 0; s < ScreenSelectables.Length; s++)
-					{
-						for (int i = 0; i < _selectableSymbols[s].Length; i++)
-						{
-							yield return new WaitForSeconds(1f);
-							ScreenSelectables[s].OnInteract();
-						}
-					}
+            SwitchSelectable.OnInteract();
+            yield return new WaitForSeconds(0.1f);
 
-					break;
-				case State.Anterodiametric:
-					for (int s = 0; s < ScreenSelectables.Length; s++)
-					{
-						yield return new WaitForSeconds(1f);
-						ScreenSelectables[s].OnInteract();
-					}
+            if (wasCycling)
+            {
+                IEnumerator enumator = ProcessTwitchCommand("cycle");
+                while (enumator.MoveNext())
+                    yield return enumator.Current;
+            }
+        }
+        else if (split.Length == 1 && split[0] == "cycle" && _state != State.Cycling)
+        {
+            yield return null;
 
-					break;
-			}
-		}
-	}
+            switch (_state)
+            {
+                case State.Retrotransphasic:
+                    for (int s = 0; s < ScreenSelectables.Length; s++)
+                    {
+                        for (int i = 0; i < _selectableSymbols[s].Length; i++)
+                        {
+                            yield return new WaitForSeconds(1f);
+                            yield return "trycancel";
+                            ScreenSelectables[s].OnInteract();
+                        }
+                        yield return new WaitForSeconds(.5f);
+                    }
+                    break;
+
+                case State.Anterodiametric:
+                    for (int s = 0; s < ScreenSelectables.Length; s++)
+                    {
+                        yield return new WaitForSeconds(1f);
+                        yield return "trycancel";
+                        ScreenSelectables[s].OnInteract();
+                    }
+                    break;
+            }
+        }
+    }
 }
