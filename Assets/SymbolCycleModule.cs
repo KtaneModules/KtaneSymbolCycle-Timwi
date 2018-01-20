@@ -240,17 +240,11 @@ public class SymbolCycleModule : MonoBehaviour
                 if (!screenSelectable)
                     yield break;
 
-                float clickSpeed = Math.Min(1.5f / clicks, 0.1f);
-
                 for (int i = 0; i < clicks; i++)
                 {
                     screenSelectable.OnInteract();
-
-                    if (clickSpeed > 0.001f)
-                    {
-                        yield return new WaitForSeconds(clickSpeed);
-                        yield return "trycancel";
-                    }
+                    yield return new WaitForSeconds(0.1f);
+                    yield return "trycancel";
                 }
             }
         }
