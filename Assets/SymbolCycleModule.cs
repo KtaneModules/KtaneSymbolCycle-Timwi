@@ -222,7 +222,7 @@ public class SymbolCycleModule : MonoBehaviour
     }
 
 #pragma warning disable 414
-    private string TwitchHelpMessage = "Flip the switch by doing !{0} flip. The module will cycle through the screens automatically, but you can do it again using !{0} cycle. Click a screen a certain number of times by doing !{0} click left 3, which will click the left screen 3 times.";
+    private string TwitchHelpMessage = "Flip the switch by doing “!{0} flip”. The module will cycle through the screens automatically, but you can do it again using “!{0} cycle”. Click a screen a certain number of times by doing “!{0} click left 3”, which will click the left screen 3 times.";
 #pragma warning restore 414
 
     public IEnumerator ProcessTwitchCommand(string command)
