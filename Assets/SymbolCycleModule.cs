@@ -106,11 +106,11 @@ public class SymbolCycleModule : MonoBehaviour
     private bool toggleSwitch()
     {
         SwitchSelectable.AddInteractionPunch();
-        Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, SwitchSelectable.transform);
 
         switch (_state)
         {
             case State.Cycling:
+                Audio.PlaySoundAtTransform("Switch1", SwitchSelectable.transform);
                 StartCoroutine(toggleSwitch(0, 30));
                 _state = Rnd.Range(0, 2) == 0 ? State.Retrotransphasic : State.Anterodiametric;
                 _cycleNumber = Rnd.Range(1000000, 100000000);
@@ -148,6 +148,7 @@ public class SymbolCycleModule : MonoBehaviour
 
             case State.Retrotransphasic:
             case State.Anterodiametric:
+                Audio.PlaySoundAtTransform("Switch2", SwitchSelectable.transform);
                 StartCoroutine(toggleSwitch(30, 0));
                 var correct = true;
                 for (int i = 0; i < 2; i++)
