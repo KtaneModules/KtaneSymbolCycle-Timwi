@@ -10,13 +10,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 615501dbe4f3fe94fbf4b564abb10237, type: 3}
   m_Name: ModConfig
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   id: SymbolCycle
   title: Symbol Cycle
   description: 'Retrotransphasic? Anterodiametric? What does that even [i]mean[/i]?
 
 
-    Module created by Timwi.
+    Module created by Timwi. Switch sound by Jr. All Star.
 
 
     [url=http://ktane.timwi.de/PDF/Symbol%20Cycle.pdf]Manual PDF[/url]
