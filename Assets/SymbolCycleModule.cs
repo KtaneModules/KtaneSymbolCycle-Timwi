@@ -77,25 +77,28 @@ public class SymbolCycleModule : MonoBehaviour
         return delegate
         {
             ScreenSelectables[i].AddInteractionPunch();
-            Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, ScreenSelectables[i].transform);
 
             switch (_state)
             {
                 case State.Cycling:
+                    Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, ScreenSelectables[i].transform);
                     Module.HandleStrike();
                     break;
 
                 case State.Retrotransphasic:
+                    Audio.PlaySoundAtTransform("Beep1", ScreenSelectables[i].transform);
                     _selectedSymbolIxs[i] = (_selectedSymbolIxs[i] + 1) % _selectableSymbols[i].Length;
                     ScreenSymbols[i].material.mainTexture = Symbols[_selectableSymbols[i][_selectedSymbolIxs[i]]];
                     break;
 
                 case State.Anterodiametric:
+                    Audio.PlaySoundAtTransform("Beep2", ScreenSelectables[i].transform);
                     _cycleNumber += _offsets[i];
                     NumberDisplay.text = _cycleNumber.ToString();
                     break;
 
                 case State.Solved:
+                    Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, ScreenSelectables[i].transform);
                     break;
             }
 
@@ -158,10 +161,10 @@ public class SymbolCycleModule : MonoBehaviour
                 if (correct)
                 {
                     Debug.LogFormat("[Symbol Cycle #{0}] Module solved.", _moduleId);
-                    Module.HandlePass();
                     for (int i = 0; i < 2; i++)
                         ScreenSymbols[i].gameObject.SetActive(false);
                     _state = State.Solved;
+                    StartCoroutine(Victory());
                 }
                 else
                 {
@@ -179,6 +182,18 @@ public class SymbolCycleModule : MonoBehaviour
         }
 
         return false;
+    }
+
+    private IEnumerator Victory()
+    {
+        Audio.PlaySoundAtTransform("Beep1", transform);
+        yield return new WaitForSeconds(.1f);
+        Audio.PlaySoundAtTransform("Beep1", transform);
+        yield return new WaitForSeconds(.1f);
+        Audio.PlaySoundAtTransform("Beep1", transform);
+        yield return new WaitForSeconds(.1f);
+        Audio.PlaySoundAtTransform("Beep2", transform);
+        Module.HandlePass();
     }
 
     private bool _togglingSwitch = false;
