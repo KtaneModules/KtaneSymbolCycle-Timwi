@@ -153,12 +153,8 @@ public class SymbolCycleModule : MonoBehaviour
             case State.Anterodiametric:
                 Audio.PlaySoundAtTransform("Switch2", SwitchSelectable.transform);
                 StartCoroutine(toggleSwitch(30, 0));
-                var correct = true;
-                for (int i = 0; i < 2; i++)
-                    if (_selectableSymbols[i][_selectedSymbolIxs[i]] != _cycles[i][_cycleNumber % _cycles[i].Length])
-                        correct = false;
 
-                if (correct)
+                if (IsSolutionCorrect())
                 {
                     Debug.LogFormat("[Symbol Cycle #{0}] Module solved.", _moduleId);
                     for (int i = 0; i < 2; i++)
@@ -182,6 +178,19 @@ public class SymbolCycleModule : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool IsSolutionCorrect()
+    {
+        for (int i = 0; i < 2; i++)
+            if (!IsScreenCorrect(i))
+                return false;
+        return true;
+    }
+
+    private bool IsScreenCorrect(int i)
+    {
+        return _selectableSymbols[i][_selectedSymbolIxs[i]] == _cycles[i][_cycleNumber % _cycles[i].Length];
     }
 
     private IEnumerator Victory()
@@ -309,5 +318,38 @@ public class SymbolCycleModule : MonoBehaviour
                     break;
             }
         }
+    }
+
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        if (_state == State.Cycling)
+        {
+            SwitchSelectable.OnInteract();
+            yield return new WaitForSeconds(.5f);
+        }
+
+        if (_state == State.Anterodiametric)
+        {
+            while (!IsSolutionCorrect())
+            {
+                ScreenSelectables[0].OnInteract();
+                yield return new WaitForSeconds(.1f);
+            }
+        }
+        else if (_state == State.Retrotransphasic)
+        {
+            for (var i = 0; i < 2; i++)
+            {
+                while (!IsScreenCorrect(i))
+                {
+                    ScreenSelectables[i].OnInteract();
+                    yield return new WaitForSeconds(.1f);
+                }
+                yield return new WaitForSeconds(.25f);
+            }
+        }
+
+        SwitchSelectable.OnInteract();
+        yield return new WaitForSeconds(.5f);
     }
 }
